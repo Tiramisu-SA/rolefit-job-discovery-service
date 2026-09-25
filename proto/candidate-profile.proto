@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package candidateprofile;
+
+service CandidateProfileService {
+  rpc GetProfile (GetProfileRequest) returns (CandidateProfile);
+}
+
+message GetProfileRequest {
+  string candidate_id = 1;
+}
+
+message CandidateProfile {
+  string candidate_id = 1;
+  repeated string skills = 2;
+  repeated string experience = 3;
+  repeated string education = 4;
+}
