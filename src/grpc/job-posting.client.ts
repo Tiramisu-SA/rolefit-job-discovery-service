@@ -8,10 +8,12 @@ const PROTO_PATH = path.resolve(__dirname, '../../proto/job-posting.proto');
 type JobPostingGrpcClient = grpc.Client & {
   getJob(
     request: { job_id: string },
+    metadata: grpc.Metadata,
     callback: (error: grpc.ServiceError | null, response: Record<string, unknown>) => void,
   ): void;
   listJobs(
     request: { query?: string; skills?: string[] },
+    metadata: grpc.Metadata,
     callback: (error: grpc.ServiceError | null, response: Record<string, unknown>) => void,
   ): void;
 };
@@ -29,7 +31,11 @@ function toJobPosting(response: Record<string, unknown>): JobPosting {
 export class JobPostingClient {
   private readonly client: JobPostingGrpcClient;
 
-  constructor(address: string) {
+  constructor(address: string, client?: JobPostingGrpcClient) {
+    if (client) {
+      this.client = client;
+      return;
+    }
     const definition = protoLoader.loadSync(PROTO_PATH, {
       keepCase: true,
       longs: String,
@@ -43,9 +49,11 @@ export class JobPostingClient {
     this.client = new loaded.jobposting.JobPostingService(address, grpc.credentials.createInsecure());
   }
 
-  getJob(jobId: string): Promise<JobPosting> {
+  getJob(jobId: string, accessToken: string): Promise<JobPosting> {
     return new Promise((resolve, reject) => {
-      this.client.getJob({ job_id: jobId }, (error, response) => {
+      const metadata = new grpc.Metadata();
+      metadata.set('authorization', `Bearer ${accessToken}`);
+      this.client.getJob({ job_id: jobId }, metadata, (error, response) => {
         if (error) {
           reject(error);
           return;
@@ -55,9 +63,11 @@ export class JobPostingClient {
     });
   }
 
-  listJobs(criteria: JobSearchCriteria = {}): Promise<JobPosting[]> {
+  listJobs(criteria: JobSearchCriteria, accessToken: string): Promise<JobPosting[]> {
     return new Promise((resolve, reject) => {
-      this.client.listJobs(criteria, (error, response) => {
+      const metadata = new grpc.Metadata();
+      metadata.set('authorization', `Bearer ${accessToken}`);
+      this.client.listJobs(criteria, metadata, (error, response) => {
         if (error) {
           reject(error);
           return;

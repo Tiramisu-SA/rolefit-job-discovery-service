@@ -19,6 +19,8 @@ The service does not connect to PostgreSQL or MongoDB. Candidate data comes from
 - `POST /api/job-fit/evaluate` with `{ "candidateId": "...", "jobId": "..." }`
 - `GET /api/job-fit/:candidateId/:jobId`
 
+`GET /health` is public. Every `/api` route requires `Authorization: Bearer <access-token>`, verified against Supabase Auth. Candidate-scoped requests must use the authenticated token's `sub` as `candidateId`; a different id is rejected.
+
 The discovery operations that require matching or upstream services intentionally return a not-implemented or upstream error until the TODOs are completed.
 
 ## Development
@@ -36,11 +38,13 @@ For watch mode:
 npm run dev
 ```
 
-`AI_PROVIDER_API_KEY` is optional in this template. No AI SDK or database dependency is installed.
+`AI_PROVIDER_API_KEY` is optional in this template. No AI SDK or database driver dependency is installed.
 
 ## Configuration
 
-- `PORT`: HTTP port, default `3000`.
+- `PORT`: HTTP port, default `3003`.
+- `SUPABASE_URL`: required Supabase Auth project URL.
+- `SUPABASE_PUBLISHABLE_KEY`: required publishable key used for JWT verification (never a service role key).
 - `CANDIDATE_PROFILE_GRPC_URL`: Candidate Profile Service address, default `localhost:50051`.
 - `JOB_POSTING_GRPC_URL`: Job Posting Service address, default `localhost:50052`.
 - `AI_PROVIDER_API_KEY`: reserved for a future adapter implementation; not required to start.
