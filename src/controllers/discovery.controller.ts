@@ -1,31 +1,33 @@
 import { Request, Response } from 'express';
 import { DiscoveryService } from '../services/discovery.service';
+import { parseJobId, parseRecommendationLimit, parseSearchFilters } from '../validation/discovery.validation';
 
+/**
+ * HTTP adapter only: parses input, calls DiscoveryService, sends JSON. The
+ * candidate is always the caller (`req.userId`, set by the identity middleware).
+ */
 export class DiscoveryController {
   constructor(private readonly discoveryService: DiscoveryService) {}
 
-  searchJobs = async (request: Request, response: Response): Promise<void> => {
-    const skills = typeof request.query.skills === 'string' ? request.query.skills.split(',').map((skill) => skill.trim()).filter(Boolean) : [];
-    const jobs = await this.discoveryService.searchJobs({
-      query: typeof request.query.query === 'string' ? request.query.query : undefined,
-      skills,
-    });
-    response.json({ jobs });
+  searchJobs = async (req: Request, res: Response): Promise<void> => {
+    const filters = parseSearchFilters(req.query);
+    const jobs = await this.discoveryService.searchJobs(req.userId!, filters);
+    res.json({ jobs });
   };
 
-  getRecommendations = async (request: Request, response: Response): Promise<void> => {
-    const jobs = await this.discoveryService.getRecommendations(request.query.candidateId as string);
-    response.json({ jobs });
+  getRecommendations = async (req: Request, res: Response): Promise<void> => {
+    const limit = parseRecommendationLimit(req.query);
+    const jobs = await this.discoveryService.getRecommendations(req.userId!, limit);
+    res.json({ jobs });
   };
 
-  evaluateJobFit = async (request: Request, response: Response): Promise<void> => {
-    const { candidateId, jobId } = request.body as { candidateId?: string; jobId?: string };
-    const evidence = await this.discoveryService.evaluateJobFit(String(candidateId), String(jobId));
-    response.json(evidence);
+  evaluateJobFit = async (req: Request, res: Response): Promise<void> => {
+    const job = await this.discoveryService.evaluateJobFit(req.userId!, parseJobId(req.params.jobId));
+    res.json(job);
   };
 
-  getMatchResult = async (request: Request, response: Response): Promise<void> => {
-    const result = await this.discoveryService.getMatchResult(String(request.params.candidateId), String(request.params.jobId));
-    response.json(result);
+  getMatchResult = async (req: Request, res: Response): Promise<void> => {
+    const match = await this.discoveryService.getMatchResult(req.userId!, parseJobId(req.params.jobId));
+    res.json(match);
   };
 }
