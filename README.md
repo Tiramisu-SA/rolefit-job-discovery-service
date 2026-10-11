@@ -23,7 +23,7 @@ Full reference with parameters, examples, types and error codes: **[api.md](api.
 | `GET` | `/api/jobs/:jobId/fit` | One job with its full match and explanation |
 | `GET` | `/api/jobs/:jobId/match` | Only the match for one job |
 
-Every `/api` route needs an `X-User-Id` header (a UUID; mock auth). The frontend calls these routes from `src/lib/api/job-discovery.ts`.
+Every `/api` route needs an `X-User-Id` header (a UUID). The frontend reaches these routes through the API Gateway (`/api/discovery/*` on `:8080`, client `src/lib/api/job-discovery.ts`); the gateway verifies the Supabase token and sets `X-User-Id` from it. This service trusts that header, so keep its port internal.
 
 ## Matching
 
@@ -61,8 +61,8 @@ npm test
 
 ## Configuration
 
-- `PORT`: HTTP port, default `3002` (3000 is the frontend, 3001 the Candidate Profile REST API).
-- `CORS_ORIGIN`: web frontend origin, default `http://localhost:3000`.
+- `PORT`: HTTP port, default `3002` (3000 is the frontend, 3001 the Candidate Profile REST API). The API Gateway expects `3002` (`JOB_DISCOVERY_SERVICE_URL`); don't set it to `3000`.
+- `CORS_ORIGIN`: web frontend origin, default `http://localhost:3000`. Only matters for direct browser calls; normal traffic comes through the API Gateway.
 - `CANDIDATE_PROFILE_GRPC_URL`: Candidate Profile Service address, default `localhost:50051`.
 - `JOB_POSTING_GRPC_URL`: Job Posting Service address, default `localhost:50052`.
 - `GRPC_DEADLINE_MS`: deadline for each upstream call, default `5000`.

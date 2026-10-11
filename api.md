@@ -1,8 +1,8 @@
 # Job Discovery Service API
 
-REST/JSON API for job search, recommendations and job-fit matching. The web frontend calls it from the browser (`rolefit-frontend/src/lib/api/job-discovery.ts`).
+REST/JSON API for job search, recommendations and job-fit matching. The web frontend reaches it through the **API Gateway** (`rolefit-api-gateway`), never directly: the browser calls `http://localhost:8080/api/discovery/*`, and the gateway verifies the Supabase token and forwards to this service's `/api/*` (e.g. `/api/discovery/jobs/search` → `/api/jobs/search`). Frontend client: `rolefit-frontend/src/lib/api/job-discovery.ts`.
 
-- **Base URL (local):** `http://localhost:3002`
+- **Base URL (local, internal):** `http://localhost:3002`. Through the gateway: `http://localhost:8080/api/discovery`.
 - **Content type:** every response is JSON.
 - **Upstream data:** the service stores nothing itself. For each request it reads the seeker's profile from the Candidate Profile Service and the jobs from the Job Posting Service, both over gRPC.
 
@@ -25,13 +25,13 @@ X-User-Id: 11111111-1111-4111-8111-111111111111
 ```
 
 - It must be a UUID. It is also the seeker's candidate profile id.
-- This is **mock auth**, the same header the frontend sends to the Candidate Profile Service. Real authentication will replace it.
+- The **API Gateway** sets it from the verified Supabase token (`sub`) and replaces any value a client sends, so callers going through the gateway send `Authorization: Bearer <token>` instead. This service itself does not verify tokens: it trusts the header, so its port must only be reachable by the gateway (and for local testing).
 - If the header is missing or isn't a UUID, the response is `401 UNAUTHENTICATED`.
 - A seeker who hasn't created a profile yet is **not** an error. They are matched as an empty profile, so scores are low and every required skill is listed as missing.
 
 ## CORS
 
-Browser requests are allowed from one origin, set by `CORS_ORIGIN` (default `http://localhost:3000`). Preflight `OPTIONS` requests return `204` and allow `GET` with the `Content-Type` and `X-User-Id` headers.
+The browser no longer calls this service directly; the API Gateway handles CORS for the frontend and drops this service's CORS headers. The service still answers direct browser requests from one origin, set by `CORS_ORIGIN` (default `http://localhost:3000`): preflight `OPTIONS` requests return `204` and allow `GET` with the `Content-Type` and `X-User-Id` headers.
 
 ---
 
