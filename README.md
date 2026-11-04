@@ -68,6 +68,10 @@ npm test
 - `GRPC_DEADLINE_MS`: deadline for each upstream call, default `5000`.
 - `AI_PROVIDER_API_KEY`: reserved for a future adapter implementation; not required to start.
 
+## Logs and request id
+
+Logs are JSON, one object per line. Each request logs one line when it ends, with `requestId`, `method`, `path`, `status` and `durationMs` (`/health` is skipped). The id comes from the gateway's `X-Request-Id` header, or is generated if missing or unsafe, and is sent as `x-request-id` metadata on every gRPC call. An unavailable upstream is logged with its name.
+
 ## Architecture Notes
 
 The `.proto` files in `proto/` are verbatim copies of the owning services' contracts (`rolefit.candidateprofile.v1`, `rolefit.jobposting.v1`). Re-copy them when those services change them; `tests/grpc.contract.test.ts` catches drift in the fields this service reads. `src/matching/` holds the deterministic matcher and scoring policy. `src/adapters/ai/` contains the internal adapter boundary; an LLM must eventually explain evidence, never determine the final score.
