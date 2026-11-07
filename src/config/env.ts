@@ -32,10 +32,10 @@ function readPositiveInt(name: string, defaultValue: number): number {
 
 function readAiProvider(): AiProvider {
   const raw = process.env.AI_PROVIDER?.trim() || 'template';
-  if (raw !== 'template' && raw !== 'gemini') {
-    throw new Error(`AI_PROVIDER must be "template" or "gemini" (got "${raw}")`);
-  }
-  return raw;
+  // deploy/.env shares AI_PROVIDER with Resume Preparation, which calls its non-AI mode "rule-based".
+  if (raw === 'template' || raw === 'rule-based') return 'template';
+  if (raw === 'gemini') return 'gemini';
+  throw new Error(`AI_PROVIDER must be "template", "rule-based" or "gemini" (got "${raw}")`);
 }
 
 export function loadConfig(): AppConfig {

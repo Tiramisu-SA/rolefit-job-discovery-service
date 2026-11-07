@@ -56,3 +56,15 @@ test('an unknown AI_PROVIDER is rejected', () => {
     assert.throws(() => loadConfig(), /AI_PROVIDER/);
   });
 });
+
+test('AI_PROVIDER=rule-based (the Resume Preparation value) selects the template', () => {
+  withEnv({ AI_PROVIDER: 'rule-based' }, () => {
+    assert.equal(loadConfig().aiProvider, 'template');
+  });
+});
+
+test('an empty AI_PROVIDER selects the template', () => {
+  withEnv({ AI_PROVIDER: '' }, () => {
+    assert.equal(loadConfig().aiProvider, 'template');
+  });
+});
