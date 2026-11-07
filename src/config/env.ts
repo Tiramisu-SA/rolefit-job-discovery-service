@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 // .env.local wins over .env (dotenv never overrides a variable that is already set).
 dotenv.config({ path: ['.env.local', '.env'] });
 
+export type AiProvider = 'template' | 'gemini';
+
 export interface AppConfig {
   port: number;
   /** Web frontend origin allowed by CORS. */
@@ -11,7 +13,11 @@ export interface AppConfig {
   jobPostingGrpcUrl: string;
   /** Deadline for each upstream gRPC call. */
   grpcDeadlineMs: number;
-  aiProviderApiKey?: string;
+  /** 'template' (default, no network) or 'gemini' (falls back to the template on errors). */
+  aiProvider: AiProvider;
+  aiApiKey?: string;
+  /** Gemini model id from AI Studio. Required when aiProvider is 'gemini'. */
+  aiModel?: string;
 }
 
 function readPositiveInt(name: string, defaultValue: number): number {
@@ -24,7 +30,22 @@ function readPositiveInt(name: string, defaultValue: number): number {
   return value;
 }
 
+function readAiProvider(): AiProvider {
+  const raw = process.env.AI_PROVIDER?.trim() || 'template';
+  // deploy/.env shares AI_PROVIDER with Resume Preparation, which calls its non-AI mode "rule-based".
+  if (raw === 'template' || raw === 'rule-based') return 'template';
+  if (raw === 'gemini') return 'gemini';
+  throw new Error(`AI_PROVIDER must be "template", "rule-based" or "gemini" (got "${raw}")`);
+}
+
 export function loadConfig(): AppConfig {
+  const aiProvider = readAiProvider();
+  const aiApiKey = process.env.AI_API_KEY?.trim() || undefined;
+  const aiModel = process.env.AI_MODEL?.trim() || undefined;
+  if (aiProvider === 'gemini') {
+    if (!aiApiKey) throw new Error('AI_API_KEY is required when AI_PROVIDER=gemini');
+    if (!aiModel) throw new Error('AI_MODEL is required when AI_PROVIDER=gemini');
+  }
   return {
     // 3000 is the frontend (Next.js), 3001 the Candidate Profile REST API.
     port: readPositiveInt('PORT', 3002),
@@ -32,6 +53,8 @@ export function loadConfig(): AppConfig {
     candidateProfileGrpcUrl: process.env.CANDIDATE_PROFILE_GRPC_URL ?? 'localhost:50051',
     jobPostingGrpcUrl: process.env.JOB_POSTING_GRPC_URL ?? 'localhost:50052',
     grpcDeadlineMs: readPositiveInt('GRPC_DEADLINE_MS', 5000),
-    aiProviderApiKey: process.env.AI_PROVIDER_API_KEY || undefined,
+    aiProvider,
+    aiApiKey,
+    aiModel,
   };
 }

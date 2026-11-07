@@ -1,5 +1,8 @@
 import express, { type Express } from 'express';
 import { AIModelAdapter } from './adapters/ai/ai.types';
+import { FallbackExplanationAdapter } from './adapters/ai/fallback.adapter';
+import { GeminiExplanationAdapter } from './adapters/ai/gemini.adapter';
+import { createGeminiClient } from './adapters/ai/gemini.client';
 import { TemplateExplanationAdapter } from './adapters/ai/template.adapter';
 import { DiscoveryController } from './controllers/discovery.controller';
 import { AppConfig, loadConfig } from './config/env';
@@ -38,14 +41,22 @@ export function buildApp({ candidateProfile, jobPosting, aiModelAdapter, corsOri
   return app;
 }
 
+/** AI_PROVIDER=gemini: Gemini with the template as fallback on errors. Otherwise the template only. */
+export function createExplanationAdapter(config: AppConfig): AIModelAdapter {
+  if (config.aiProvider === 'gemini' && config.aiApiKey && config.aiModel) {
+    const client = createGeminiClient({ apiKey: config.aiApiKey, model: config.aiModel });
+    return new FallbackExplanationAdapter(new GeminiExplanationAdapter(client), new TemplateExplanationAdapter());
+  }
+  return new TemplateExplanationAdapter();
+}
+
 /** The app wired to the real gRPC services. */
 export function createApp(): { app: Express; config: AppConfig } {
   const config = loadConfig();
   const app = buildApp({
     candidateProfile: new CandidateProfileClient(config.candidateProfileGrpcUrl, config.grpcDeadlineMs),
     jobPosting: new JobPostingClient(config.jobPostingGrpcUrl, config.grpcDeadlineMs),
-    // TODO 8: swap for an LLM-backed adapter (see ai.adapter.ts).
-    aiModelAdapter: new TemplateExplanationAdapter(),
+    aiModelAdapter: createExplanationAdapter(config),
     corsOrigin: config.corsOrigin,
   });
   return { app, config };
