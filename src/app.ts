@@ -11,6 +11,7 @@ import { JobPostingClient, JobPostingReader } from './grpc/job-posting.client';
 import { cors } from './middleware/cors.middleware';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { identifyFromHeader } from './middleware/identity.middleware';
+import { requestContext } from './middleware/request-context.middleware';
 import { createDiscoveryRoutes } from './routes/discovery.routes';
 import { DiscoveryService } from './services/discovery.service';
 
@@ -31,6 +32,8 @@ export function buildApp({ candidateProfile, jobPosting, aiModelAdapter, corsOri
   app.get('/health', (_request, response) => {
     response.json({ status: 'ok', service: 'job-discovery-service' });
   });
+  // After /health, so the health checks polling every few seconds are not logged.
+  app.use(requestContext);
   app.use('/api', identifyFromHeader);
   app.use(express.json());
   app.use('/api', createDiscoveryRoutes(controller));

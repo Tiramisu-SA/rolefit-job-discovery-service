@@ -3,6 +3,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { AppError, ServiceUnavailableError, UpstreamError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import { currentRequestId, REQUEST_ID_KEY } from '../utils/request-context';
 
 /** Message objects as @grpc/proto-loader returns them (keepCase: snake_case keys, enums as strings). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,18 +38,24 @@ export function callUnary(
   deadlineMs: number,
   mapError: (error: grpc.ServiceError) => AppError | undefined = () => undefined,
 ): Promise<Msg> {
+  // Read now: this callback may run outside the request's async context.
+  const requestId = currentRequestId();
+  const metadata = new grpc.Metadata();
+  if (requestId) metadata.set(REQUEST_ID_KEY, requestId);
   return new Promise((resolve, reject) => {
-    method(request, new grpc.Metadata(), { deadline: Date.now() + deadlineMs }, (error, response) => {
+    method(request, metadata, { deadline: Date.now() + deadlineMs }, (error, response) => {
       if (!error) {
         resolve(response);
         return;
       }
+      const failure = { requestId, upstream: service, code: error.code, details: error.details };
       if (error.code === grpc.status.UNAVAILABLE || error.code === grpc.status.DEADLINE_EXCEEDED) {
+        logger.error(`${service} service is unavailable`, failure);
         reject(new ServiceUnavailableError(service));
         return;
       }
       const mapped = mapError(error);
-      if (!mapped) logger.error(`${service} gRPC error`, { code: error.code, details: error.details });
+      if (!mapped) logger.error(`${service} gRPC error`, failure);
       reject(mapped ?? new UpstreamError(service));
     });
   });
