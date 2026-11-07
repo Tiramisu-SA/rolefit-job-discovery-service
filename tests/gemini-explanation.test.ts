@@ -85,3 +85,15 @@ test('fallback adapter passes through the primary result when it works', async (
   const result = await new FallbackExplanationAdapter(primary, new TemplateExplanationAdapter()).explainMatch(input);
   assert.equal(result.text, GOOD);
 });
+
+test('assertGroundedExplanation catches an ungrounded skill at the end of a sentence', () => {
+  assert.throws(() => assertGroundedExplanation('Great fit, plus Kubernetes.', input), /outside the evidence/);
+  assert.throws(() => assertGroundedExplanation('The main gap is Kubernetes. Keep learning.', input), /outside the evidence/);
+  assert.doesNotThrow(() => assertGroundedExplanation('You know Node.js.', input));
+});
+
+test('assertGroundedExplanation does not match a skill inside a longer name', () => {
+  const withNode = { ...input, candidate: null, evidence: { ...input.evidence, matchedSkills: ['TypeScript'] } };
+  const nodeOnly = { ...withNode, job: { ...input.job, requirements: { ...input.job.requirements, requiredSkills: [{ name: 'Node', level: 'BASIC' as const, minimumYears: 0 }] } } };
+  assert.doesNotThrow(() => assertGroundedExplanation('You know Node.js well.', nodeOnly));
+});
