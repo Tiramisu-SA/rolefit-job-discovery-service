@@ -57,7 +57,7 @@ Tests (`tsx --test`; the gRPC contract tests start fake upstream servers from `p
 npm test
 ```
 
-`AI_PROVIDER_API_KEY` is optional in this template. No AI SDK or database dependency is installed.
+The AI settings are optional: by default the explanation comes from a fixed template. No AI SDK or database dependency is installed (Gemini is called over REST).
 
 ## Configuration
 
@@ -66,7 +66,8 @@ npm test
 - `CANDIDATE_PROFILE_GRPC_URL`: Candidate Profile Service address, default `localhost:50051`.
 - `JOB_POSTING_GRPC_URL`: Job Posting Service address, default `localhost:50052`.
 - `GRPC_DEADLINE_MS`: deadline for each upstream call, default `5000`.
-- `AI_PROVIDER_API_KEY`: reserved for a future adapter implementation; not required to start.
+- `AI_PROVIDER`: `template` (default) or `gemini`. With `gemini`, the explanation is written by the model from the match evidence only, and the service falls back to the template if Gemini fails, times out or returns text that is not grounded in the evidence.
+- `AI_API_KEY`, `AI_MODEL`: Gemini key and model id from AI Studio. Both are required when `AI_PROVIDER=gemini`; the service refuses to start without them.
 
 ## Architecture Notes
 

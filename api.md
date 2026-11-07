@@ -202,7 +202,7 @@ The scoring is deterministic: the same profile and job always give the same scor
 
 Example (the response above): `50×0.5 + 100×0.25 + 50×0.1 + 100×0.15 = 70`.
 
-Today the explanation comes from a fixed text template. An AI model will replace it later and will see only this evidence; it may reword the explanation but can't change the score.
+The explanation comes from a fixed text template by default. With `AI_PROVIDER=gemini` an AI model writes it instead, seeing only this evidence; it may reword the explanation but can't change the score. If the model fails or its answer is not grounded in the evidence, the template text is used.
 
 ---
 

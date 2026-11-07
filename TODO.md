@@ -74,7 +74,7 @@ Complete these tasks in order. The hints identify the design questions to answer
 
 ## TODO 8 - Implement `AIModelAdapter.explainMatch()` (deferred)
 
-**Status:** `TemplateExplanationAdapter` writes a fixed-template explanation for now; `UnimplementedAIModelAdapter` is the slot for the LLM provider.
+**Status:** `TemplateExplanationAdapter` writes a fixed-template explanation for now; set `AI_PROVIDER=gemini` to use `GeminiExplanationAdapter` with the template as fallback.
 
 **Goal:** Add natural-language explanation after deterministic evidence has been produced.
 
